@@ -1,5 +1,6 @@
 const mineflayer = require('mineflayer');
 const OpenAI = require('openai');
+const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
 require('dotenv').config();
 
 // Initialize OpenAI API
@@ -11,6 +12,9 @@ const bot = mineflayer.createBot({
     port: 25565,        // Default Minecraft Java Edition port
     username: 'GPT-4o-mini', // Change this to your bot's username
 });
+
+// Set up pathfinding
+bot.loadPlugin(pathfinder);
 
 // Function to send chat input to OpenAI and return a response
 async function getAIResponse(input) {
@@ -41,14 +45,24 @@ bot.on('chat', async (username, message) => {
         return;
     }
 
-    // Ignore messages that are too short
-    if (message.length < 3) return;
+    // If the message is a command to move to a specific location
+    if (message.startsWith("go to")) {
+        const coordinates = message.split(' ').slice(2); // Example: "go to 100 64 -100"
+        const x = parseInt(coordinates[0]);
+        const y = parseInt(coordinates[1]);
+        const z = parseInt(coordinates[2]);
 
-    // Send message to OpenAI for response
-    const response = await getAIResponse(`${message}`);
-
-    // Send response back in chat
-    bot.chat(response);
+        // Move the bot to the coordinates
+        const targetPosition = new goals.GoalBlock(x, y, z);
+        bot.pathfinder.setMovements(new Movements(bot, bot.registry));
+        bot.pathfinder.goto(targetPosition)
+            .catch(err => bot.chat("Failed to find a path!"));
+    } else {
+        // Send message to OpenAI for response
+        const response = await getAIResponse(`${message}`);
+        // Send response back in chat
+        bot.chat(response);
+    }
 });
 
 // Handle basic events
