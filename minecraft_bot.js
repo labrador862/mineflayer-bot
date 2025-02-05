@@ -53,14 +53,14 @@ function getPlayerCoords(username) {
     const playerZ = player.position.z;
 
     console.log(`${username} is at x=${playerX}, y=${playerY}, z=${playerZ}`);
-    return `${username} is at x=${playerX}, y=${playerY}, z=${playerZ}`;
+    return ` ${username} is at x=${playerX}, y=${playerY}, z=${playerZ}`;
 }
 
 // Handle in-game chat
 bot.on('chat', async (username, message) => {
     if (username === bot.username) return; // Ignore bot's own messages
 
-    console.log(`${username} said: ${message}`);
+    console.log(`${username}: ${message}`);
 
     // message to make bot leave (used for restarting)
     if (message.toLowerCase() === "goodbye bot") {
@@ -69,37 +69,41 @@ bot.on('chat', async (username, message) => {
         return;
     }
 
-    // reformat player's message
-    let reformat = await getAIResponse(message);
-    console.log(`Initial reformated response: ${reformat}\n`);
+    // the API interprets the player's message 
+    // if necessary, uses context.txt to rephrase the output
+    // which is important for parsing information 
+    let interpreted = await getAIResponse(message);
 
-    // used to grab player's coordinates
-    if (reformat.toLowerCase().includes("coordinates")) {
-        reformat += getPlayerCoords(username);
-    }
+    // if the rephrased message includes the word coordinates,
+    // get the player's coordinates and add it to the message
+    if (interpreted.toLowerCase().includes("coordinates")) {
+        interpreted += getPlayerCoords(username);
+        console.log(`Initial rephrased response: ${interpreted}\n`);
 
-    // Send message to OpenAI for rephrasing and response
-    const response = await getAIResponse(reformat);
-    console.log(`Rephrased response: ${response}\n`);
+        // send that message back to the API so it can reformat the 
+        // message to include the exact coordinates
+        const reformattedCommand = await getAIResponse(interpreted);
+        console.log(`Reformatted response: ${reformattedCommand}\n`);
 
-    // Check if the rephrased response includes with "go to"
-    if (response.toLowerCase().includes("go to")) {
-        bot.chat(`/msg ${username} Rephrased command: ${response}`);
-        // Parse the coordinates from the response
-        const coordinates = response.split(' ').slice(2); // Example: "go to 100 64 -100"
-        const x = parseInt(coordinates[0]);
-        const y = parseInt(coordinates[1]);
-        const z = parseInt(coordinates[2]);
+        // check if reformattedCommand starts with "go to"
+        if (reformattedCommand.toLowerCase().startsWith("go to")) {
+            bot.chat(`/msg ${username} reformatted command: ${reformattedCommand}`);
+            // parse coordinates from the message
+            const coordinates = reformattedCommand.split(' ').slice(2); // Example: "go to 100 64 -100"
+            const x = parseInt(coordinates[0]);
+            const y = parseInt(coordinates[1]);
+            const z = parseInt(coordinates[2]);
 
-        // Move the bot to the coordinates
-        bot.chat('I\'m on my way!');
-        const targetPosition = new goals.GoalBlock(x, y, z);
-        bot.pathfinder.setMovements(new Movements(bot, bot.registry));
-        bot.pathfinder.goto(targetPosition)
-            .catch(err => bot.chat("Failed to find a path!"));
+            // Move the bot to the coordinates
+            bot.chat('I\'m on my way!');
+            const targetPosition = new goals.GoalBlock(x, y, z);
+            bot.pathfinder.setMovements(new Movements(bot, bot.registry));
+            bot.pathfinder.goto(targetPosition)
+                .catch(err => bot.chat("Failed to find a path!"));   
+        }
     } else {
-        // Otherwise, send the rephrased response back in chat
-        bot.chat(response);
+        console.log(`GPT-4o-mini: ${interpreted}\n`);
+        bot.chat(interpreted);
     }
 });
 
