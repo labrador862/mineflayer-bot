@@ -7,12 +7,18 @@ require('dotenv').config();
 // Initialize OpenAI API
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Create a bot instance
-const bot = mineflayer.createBot({
-    host: 'localhost',  // Change to your server's IP
-    port: 25565,        // Default Minecraft Java Edition port
-    username: 'GPT-4o-mini', // Change this to your bot's username
-});
+let bot; 
+
+function createBotInstance(){
+    // create a bot instance
+    bot = mineflayer.createBot( {
+        host: 'localhost',  // Change to your server's IP
+        port: 25565,        // Default Minecraft Java Edition port
+        username: 'GPT-4o-mini', // Change this to your bot's username
+    } );
+}
+
+createBotInstance();
 
 // Set up pathfinding
 bot.loadPlugin(pathfinder);
@@ -58,14 +64,14 @@ function getPlayerCoords(username) {
 
 // Handle in-game chat
 bot.on('chat', async (username, message) => {
-    if (username === bot.username) return; // Ignore bot's own messages
+    if (username === bot.username) return; // ignore bot's own messages
 
     console.log(`${username}: ${message}`);
 
-    // message to make bot leave (used for restarting)
+    // message to make bot disconnect
     if (message.toLowerCase() === "goodbye bot") {
-        bot.chat("Goodbye, see you next time!"); // Send a farewell message
-        setTimeout(() => bot.end(), 1000); // Wait 1 second before disconnecting
+        bot.chat("Goodbye, see you next time!");
+        setTimeout(() => bot.end(), 1000); // wait 1 second before disconnecting
         return;
     }
 
@@ -89,12 +95,12 @@ bot.on('chat', async (username, message) => {
         if (reformattedCommand.toLowerCase().startsWith("go to")) {
             bot.chat(`/msg ${username} reformatted command: ${reformattedCommand}`);
             // parse coordinates from the message
-            const coordinates = reformattedCommand.split(' ').slice(2); // Example: "go to 100 64 -100"
+            const coordinates = reformattedCommand.split(' ').slice(2); // ex: "go to 100 64 -100"
             const x = parseInt(coordinates[0]);
             const y = parseInt(coordinates[1]);
             const z = parseInt(coordinates[2]);
 
-            // Move the bot to the coordinates
+            // move the bot to the coordinates
             bot.chat('I\'m on my way!');
             const targetPosition = new goals.GoalBlock(x, y, z);
             bot.pathfinder.setMovements(new Movements(bot, bot.registry));
