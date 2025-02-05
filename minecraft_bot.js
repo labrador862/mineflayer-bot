@@ -1,6 +1,7 @@
 const mineflayer = require('mineflayer');
 const OpenAI = require('openai');
 const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
+const fs = require('fs');
 require('dotenv').config();
 
 // Initialize OpenAI API
@@ -16,12 +17,25 @@ const bot = mineflayer.createBot({
 // Set up pathfinding
 bot.loadPlugin(pathfinder);
 
+// Configure the bot's movement abilities
+bot.on('spawn', () => {
+    // Set movement settings
+    const movements = new Movements(bot, bot.registry);
+    movements.allow1by1towers = true; // Enable the ability to build 1x1 towers
+    movements.canDig = true; // enable ability to break blocks
+    movements.allowFreeMotion = true; // enable ability to walk in a straight path to target location
+    bot.pathfinder.setMovements(movements);
+});
+
 // Function to send chat input to OpenAI and return a response
 async function getAIResponse(input) {
     try {
+        //read file context.txt
+        const context = await fs.promises.readFile('context.txt', 'utf-8');
+
         const response = await openai.chat.completions.create({
             model: 'gpt-4o-mini',
-            messages: [{ role: 'system', content: "You are a helpful Minecraft bot. Be concise with your responses: 150 words or less."},
+            messages: [{ role: 'system', content: context},
                        { role: 'user', content: input}
             ],
         });
@@ -45,22 +59,26 @@ bot.on('chat', async (username, message) => {
         return;
     }
 
-    // If the message is a command to move to a specific location
-    if (message.startsWith("go to")) {
-        const coordinates = message.split(' ').slice(2); // Example: "go to 100 64 -100"
+    // Send message to OpenAI for rephrasing and response
+    const response = await getAIResponse(message);
+    console.log(`AI rephrased command: ${response}`);
+
+    // Check if the rephrased response starts with "go to"
+    if (response.toLowerCase().startsWith("go to")) {
+        // Parse the coordinates from the response
+        const coordinates = response.split(' ').slice(2); // Example: "go to 100 64 -100"
         const x = parseInt(coordinates[0]);
         const y = parseInt(coordinates[1]);
         const z = parseInt(coordinates[2]);
 
         // Move the bot to the coordinates
+        bot.chat('I\'m on my way!');
         const targetPosition = new goals.GoalBlock(x, y, z);
         bot.pathfinder.setMovements(new Movements(bot, bot.registry));
         bot.pathfinder.goto(targetPosition)
             .catch(err => bot.chat("Failed to find a path!"));
     } else {
-        // Send message to OpenAI for response
-        const response = await getAIResponse(`${message}`);
-        // Send response back in chat
+        // Otherwise, send the rephrased response back in chat
         bot.chat(response);
     }
 });
