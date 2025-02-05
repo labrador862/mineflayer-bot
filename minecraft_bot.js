@@ -46,25 +46,44 @@ async function getAIResponse(input) {
     }
 }
 
+function getPlayerCoords(username) {
+    const player = bot.players[username].entity;
+    const playerX = player.position.x;
+    const playerY = player.position.y;
+    const playerZ = player.position.z;
+
+    console.log(`${username} is at x=${playerX}, y=${playerY}, z=${playerZ}`);
+    return `${username} is at x=${playerX}, y=${playerY}, z=${playerZ}`;
+}
+
 // Handle in-game chat
 bot.on('chat', async (username, message) => {
     if (username === bot.username) return; // Ignore bot's own messages
 
     console.log(`${username} said: ${message}`);
 
-        // Check if the message is "goodbye bot" (case insensitive)
+    // message to make bot leave (used for restarting)
     if (message.toLowerCase() === "goodbye bot") {
         bot.chat("Goodbye, see you next time!"); // Send a farewell message
         setTimeout(() => bot.end(), 1000); // Wait 1 second before disconnecting
         return;
     }
 
+    // used to grab player's coordinates
+    if (message.toLowerCase().includes("me") || 
+        message.toLowerCase().includes("my") || 
+        message.toLowerCase().includes("here") ||
+        message.toLowerCase().includes("position")) {
+        message += getPlayerCoords(username);
+    }
+
     // Send message to OpenAI for rephrasing and response
     const response = await getAIResponse(message);
-    console.log(`AI rephrased command: ${response}`);
+    console.log(`Rephrased response: ${response}`);
 
-    // Check if the rephrased response starts with "go to"
-    if (response.toLowerCase().startsWith("go to")) {
+    // Check if the rephrased response includes with "go to"
+    if (response.toLowerCase().includes("go to")) {
+        bot.chat(`/msg ${username} Rephrased command: ${response}`);
         // Parse the coordinates from the response
         const coordinates = response.split(' ').slice(2); // Example: "go to 100 64 -100"
         const x = parseInt(coordinates[0]);
