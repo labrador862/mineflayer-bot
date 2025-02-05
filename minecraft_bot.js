@@ -69,17 +69,18 @@ bot.on('chat', async (username, message) => {
         return;
     }
 
+    // reformat player's message
+    let reformat = await getAIResponse(message);
+    console.log(`Initial reformated response: ${reformat}\n`);
+
     // used to grab player's coordinates
-    if (message.toLowerCase().includes("me") || 
-        message.toLowerCase().includes("my") || 
-        message.toLowerCase().includes("here") ||
-        message.toLowerCase().includes("position")) {
-        message += getPlayerCoords(username);
+    if (reformat.toLowerCase().includes("coordinates")) {
+        reformat += getPlayerCoords(username);
     }
 
     // Send message to OpenAI for rephrasing and response
-    const response = await getAIResponse(message);
-    console.log(`Rephrased response: ${response}`);
+    const response = await getAIResponse(reformat);
+    console.log(`Rephrased response: ${response}\n`);
 
     // Check if the rephrased response includes with "go to"
     if (response.toLowerCase().includes("go to")) {
