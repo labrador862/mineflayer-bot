@@ -84,7 +84,7 @@ bot.on('chat', async (username, message) => {
     // get the player's coordinates and add it to the message
     if (interpreted.toLowerCase().includes("coordinates")) {
         interpreted += getPlayerCoords(username);
-        console.log(`Initial rephrased response: ${interpreted}\n`);
+        console.log(`Initial rephrased response: ${interpreted}`);
 
         // send that message back to the API so it can reformat the 
         // message to include the exact coordinates
