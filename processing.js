@@ -17,4 +17,17 @@ function getPlayerCoords(bot, username) {
     return { x, y, z };
 }
 
-module.exports = { parseMovementCommand, getPlayerCoords };
+function getBotCoords(bot) {
+    const x = bot.entity.position.x;
+    const y = bot.entity.position.y;
+    const z = bot.entity.position.z;
+    return { x, y, z };
+}
+
+function getSingleParameter(command) {
+    const str = command.split(' ');
+    const param = parseInt(str[1]);
+    return param;
+}
+
+module.exports = { parseMovementCommand, getPlayerCoords, getBotCoords, getSingleParameter };

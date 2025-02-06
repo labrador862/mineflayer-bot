@@ -4,6 +4,10 @@ require('dotenv').config();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+function formatMessageHistory(history) {
+    return history.map(entry => `${entry.username}: ${entry.message}`).join("\n");
+}
+
 // uses provided context to format a command
 async function getAIFormattedCommand(input) {
     try {
@@ -52,4 +56,4 @@ async function getAIResponse(input) {
     }
 }
 
-module.exports = { getAIFormattedCommand, getAIInterpretation, getAIResponse };
+module.exports = { formatMessageHistory, getAIFormattedCommand, getAIInterpretation, getAIResponse };

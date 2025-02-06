@@ -5,7 +5,7 @@ function createBotInstance() {
     const bot = mineflayer.createBot({
         host: 'localhost',  // server IP
         port: 25565,        // default Minecraft Java Edition port
-        username: 'GPT-4o-mini', // bot's username in game
+        username: 'GPT', // bot's username in game
     });
 
     bot.loadPlugin(pathfinder);

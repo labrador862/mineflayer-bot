@@ -1,8 +1,21 @@
-const { getAIFormattedCommand, getAIInterpretation, getAIResponse } = require('./openai');
-const { moveToCoordinates } = require('./goals');
-const { getPlayerCoords, parseMovementCommand } = require('./processing');
+const { formatMessageHistory, getAIFormattedCommand, getAIInterpretation, getAIResponse } = require('./openai');
+const goals = require('./goals');
+const { getPlayerCoords, parseMovementCommand, getSingleParameter } = require('./processing');
+
+const messageHistory = [];
+
+function addHistory(username, message) {
+    messageHistory.push({ username, message });
+
+    // remove message from 11 messages ago
+    if (messageHistory.length > 10) {
+        messageHistory.splice(0, messageHistory.length - 10);
+    }
+}
 
 async function handleChat(bot, username, message) {
+    // add the player's and the bot's messages to the history
+    addHistory(username, message);  
     if (username === bot.username) return; // ignore bot's own messages
     
     console.log(`${username}: ${message}`);
@@ -14,8 +27,11 @@ async function handleChat(bot, username, message) {
         return;
     }
     
+    // take existing message history (array) and convert to string
+    const formattedHistory = formatMessageHistory(messageHistory);
+
     // GPT interprets the player's message and reasons for it
-    let interpreted = await getAIInterpretation(message);
+    let interpreted = await getAIInterpretation(formattedHistory);
     console.log(`Initial interpretation: ${interpreted}\n`);
     bot.chat(`/msg ${username} ${interpreted}`);
 
@@ -27,16 +43,26 @@ async function handleChat(bot, username, message) {
 
         if (formattedCommand === "getPlayerCoords") {
             let coords = getPlayerCoords(bot, username);
-            moveToCoordinates(bot, coords.x, coords.y, coords.z);
+            goals.moveToCoordinates(bot, coords.x, coords.y, coords.z);
+            let response = await getAIResponse(formattedHistory);
+            console.log(`GPT: ${response}\n`);
+            bot.chat(response);
         } else if (formattedCommand.toLowerCase().startsWith("go to")) {
             let coords = parseMovementCommand(formattedCommand);
-            moveToCoordinates(bot, coords.x, coords.y, coords.z);
+            goals.moveToCoordinates(bot, coords.x, coords.y, coords.z);
+            let response = await getAIResponse(formattedHistory);
+            console.log(`GPT: ${response}\n`);
+            bot.chat(response);
+        } else if (formattedCommand.startsWith("digDown")) {
+            let param = getSingleParameter(formattedCommand);
+            console.log(`param: ${param}`);
+            goals.digDown(bot, param);
         } else {
             bot.chat("Unknown command. No action taking place."); 
         }
     } else {
-        let response = await getAIResponse(message);
-        console.log(`GPT-4o-mini: ${response}\n`);
+        let response = await getAIResponse(formattedHistory);
+        console.log(`GPT: ${response}\n`);
         bot.chat(response);
     }
 }
