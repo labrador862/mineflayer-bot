@@ -5,10 +5,10 @@ const { handleChat } = require('./chatHandler');
 // initialize bot instance
 const bot = createBotInstance();
 
-// Handle in-game chat messages
+// handle in-game chat messages
 bot.on('chat', (username, message) => handleChat(bot, username, message));
 
-// Handle basic events
+// handle basic events
 bot.on('spawn', () => console.log('Bot has spawned!'));
 bot.on('kicked', (reason) => console.log(`Kicked: ${reason}`));
 bot.on('error', (err) => console.error(`Error: ${err}`));
