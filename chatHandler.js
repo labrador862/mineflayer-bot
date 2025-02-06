@@ -1,4 +1,4 @@
-const { getAIFormattedCommand, getAIInterpretation } = require('./openai');
+const { getAIFormattedCommand, getAIInterpretation, getAIResponse } = require('./openai');
 const { moveToCoordinates } = require('./goals');
 const { getPlayerCoords, parseMovementCommand } = require('./processing');
 
@@ -19,19 +19,25 @@ async function handleChat(bot, username, message) {
     console.log(`Initial interpretation: ${interpreted}\n`);
     bot.chat(`/msg ${username} ${interpreted}`);
 
-    // interprets the reasoned response and writes a command
-    let formattedCommand = await getAIFormattedCommand(interpreted);
-    console.log(`Formatted command: ${formattedCommand}\n`);
-    bot.chat(`/msg ${username} ${formattedCommand}`);
+    if (interpreted.toLowerCase().includes("command requested")) {
+        // interprets the reasoned response and writes a command
+        let formattedCommand = await getAIFormattedCommand(interpreted);
+        console.log(`Formatted command: ${formattedCommand}\n`);
+        bot.chat(`/msg ${username} ${formattedCommand}`);
 
-    if (formattedCommand === "getPlayerCoords") {
-        let coords = getPlayerCoords(bot, username);
-        moveToCoordinates(bot, coords.x, coords.y, coords.z);
-    }
-
-    if (formattedCommand.toLowerCase().startsWith("go to")) {
-        let coords = parseMovementCommand(formattedCommand);
-        moveToCoordinates(bot, coords.x, coords.y, coords.z);
+        if (formattedCommand === "getPlayerCoords") {
+            let coords = getPlayerCoords(bot, username);
+            moveToCoordinates(bot, coords.x, coords.y, coords.z);
+        } else if (formattedCommand.toLowerCase().startsWith("go to")) {
+            let coords = parseMovementCommand(formattedCommand);
+            moveToCoordinates(bot, coords.x, coords.y, coords.z);
+        } else {
+            bot.chat("Unknown command. No action taking place."); 
+        }
+    } else {
+        let response = await getAIResponse(message);
+        console.log(`GPT-4o-mini: ${response}\n`);
+        bot.chat(response);
     }
 }
 
