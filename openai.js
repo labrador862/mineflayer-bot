@@ -9,12 +9,10 @@ async function getAIResponse(input) {
     try {
         //read file context.txt
         const context = await fs.promises.readFile('context.txt', 'utf-8');
-
         const response = await openai.chat.completions.create({
             model: 'gpt-4o-mini',
             messages: [{ role: 'system', content: context},
-                       { role: 'user', content: input}
-            ],
+                       { role: 'user', content: input}],
         });
         return response.choices[0].message.content;
     } catch (error) {
