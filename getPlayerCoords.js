@@ -1,12 +1,12 @@
 function getPlayerCoords(bot, username) {
     const player = bot.players[username].entity;
 
-    const playerX = player.position.x;
-    const playerY = player.position.y;
-    const playerZ = player.position.z;
+    const x = player.position.x;
+    const y = player.position.y;
+    const z = player.position.z;
 
-    console.log(`${username} is at x=${playerX}, y=${playerY}, z=${playerZ}`);
-    return ` ${username} is at x=${playerX}, y=${playerY}, z=${playerZ}`;
+    console.log(`${username} is at x=${x}, y=${y}, z=${z}`);
+    return { x, y, z };
 }
 
 module.exports = { getPlayerCoords };

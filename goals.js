@@ -2,12 +2,12 @@ const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
 
 async function moveToCoordinates(bot, x, y, z) {
     bot.chat("I'm on my way!");
-    const targetPosition = new goals.GoalBlock(x, y, z);
+    const targetCoordinates = new goals.GoalBlock(x, y, z);
     bot.pathfinder.setMovements(new Movements(bot, bot.registry));
 
     try {
-        await bot.pathfinder.goto(targetPosition);
-        
+        await bot.pathfinder.goto(targetCoordinates);
+
         // look at the player once arrived
         bot.once('move', ()=>{ 
             let friend = bot.nearestEntity(); 

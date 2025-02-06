@@ -1,4 +1,4 @@
-const { getAIResponse } = require('./openai');
+const { getAIFormattedCommand, getAIInterpretation } = require('./openai');
 const { getPlayerCoords } = require('./getPlayerCoords');
 const { moveToCoordinates } = require('./goals');
 const { parseMovementCommand } = require('./processing');
@@ -6,46 +6,35 @@ const { parseMovementCommand } = require('./processing');
 async function handleChat(bot, username, message) {
     if (username === bot.username) return; // ignore bot's own messages
     
-        console.log(`${username}: ${message}`);
+    console.log(`${username}: ${message}`);
     
-        // message to make bot disconnect
-        if (message.toLowerCase() === "goodbye bot") {
-            bot.chat("Goodbye, see you next time!");
-            setTimeout(() => bot.end(), 1000); // wait 1 second before disconnecting
-            return;
-        }
-    
-        // the API interprets the player's message 
-        // if necessary, uses context.txt to rephrase the output
-        // which is important for parsing information 
-        let interpreted = await getAIResponse(message);
-    
-        // if the rephrased message includes the word coordinates,
-        // get the player's coordinates and add it to the message
-        if (interpreted.toLowerCase().includes("coordinates")) {
-            interpreted += getPlayerCoords(bot, username);
-            console.log(`Initial rephrased response: ${interpreted}`);
-    
-            // send that message back to the API so it can reformat the 
-            // message to include the exact coordinates
-            const reformattedCommand = await getAIResponse(interpreted);
-            console.log(`Reformatted response: ${reformattedCommand}\n`);
-    
-            // check if reformattedCommand starts with "go to"
-            if (reformattedCommand.toLowerCase().startsWith("go to")) {
-                bot.chat(`/msg ${username} executed command: ${reformattedCommand}`);
-                // parse coordinates from the message
-                const coordinates = parseMovementCommand(reformattedCommand);
-
-                // move the bot to the coordinates
-                moveToCoordinates(bot, coordinates.x, coordinates.y, coordinates.z);
-            } else {
-                bot.chat(`Invalid coordinates!`);
-            }
-        } else {
-            console.log(`GPT-4o-mini: ${interpreted}\n`);
-            bot.chat(interpreted);
-        }
+    // message to make bot disconnect
+    if (message.toLowerCase() === "goodbye bot") {
+        bot.chat("Goodbye, see you next time!");
+        setTimeout(() => bot.end(), 1000); // wait 1 second before disconnecting
+        return;
     }
+    
+    // the API interprets the player's message and reasons for it
+    let interpreted = await getAIInterpretation(message);
+    console.log(`Initial interpretation: ${interpreted}\n`);
+    bot.chat(`/msg ${username} ${interpreted}`);
+
+    let formattedCommand = await getAIFormattedCommand(interpreted);
+    console.log(`Formatted command: ${formattedCommand}\n`);
+    bot.chat(`/msg ${username} ${formattedCommand}`);
+
+    if (formattedCommand === "getPlayerCoords") {
+        let coords = getPlayerCoords(bot, username);
+        console.log(`x: ${coords.x} y: ${coords.y} z: ${coords.z}`);
+        moveToCoordinates(bot, coords.x, coords.y, coords.z);
+    }
+
+    if (formattedCommand.toLowerCase().startsWith("go to")) {
+        let coords = parseMovementCommand(formattedCommand);
+        console.log(`x: ${coords.x} y: ${coords.y} z: ${coords.z}`);
+        moveToCoordinates(bot, coords.x, coords.y, coords.z);
+    }
+}
 
 module.exports = { handleChat };
